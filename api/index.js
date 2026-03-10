@@ -1,10 +1,9 @@
-// Disable SSL verification for self-signed certificates
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
 export default async function handler(req, res) {
   const targetPath = req.url.split('?')[0];
   const queryString = req.url.includes('?') ? '?' + req.url.split('?')[1] : '';
   const targetUrl = `https://icoderd.integracao.academiacode.dev.br${targetPath}${queryString}`;
+  
+  console.log(`[PROXY] ${req.method} ${targetPath} -> ${targetUrl}`);
   
   try {
     const headers = new Headers();
@@ -24,11 +23,18 @@ export default async function handler(req, res) {
       }
     }
     
+    // Disable SSL verification globally
+    const https = await import('https');
+    const agent = new https.Agent({
+      rejectUnauthorized: false
+    });
+    
     const response = await fetch(targetUrl, {
       method: req.method,
       headers: headers,
       body: body,
-      redirect: 'follow'
+      redirect: 'follow',
+      agent: agent
     });
     
     const responseBody = await response.text();
@@ -49,9 +55,9 @@ export default async function handler(req, res) {
     res.send(responseBody);
     
   } catch (error) {
-    console.error('[ERROR]', error.message);
+    console.error('[ERROR]', error.message, error.stack);
     res.status(502);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.json({ error: error.message });
+    res.json({ error: error.message, stack: error.stack });
   }
 }

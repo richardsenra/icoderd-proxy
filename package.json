@@ -1,6 +1,6 @@
 {
   "name": "icoderd-proxy",
   "version": "1.0.0",
-  "description": "Proxy reverso para iCodeRD com SSL válido via Vercel",
-  "private": true
+  "type": "module",
+  "dependencies": {}
 }
