@@ -3,23 +3,37 @@ import { URL } from 'url';
 
 export default async function handler(req, res) {
   const targetPath = req.url.split('?')[0];
-  const queryString = req.url.includes('?') ? '?' + req.url.split('?')[1] : '';
-  const targetUrl = `https://icoderd.integracao.academiacode.dev.br${targetPath}${queryString}`;
+  let queryString = req.url.includes('?') ? '?' + req.url.split('?')[1] : '';
   
   console.log(`[PROXY] ${req.method} ${targetPath}`);
+  console.log(`[PROXY] Original query:`, req.url.split('?')[1]);
+  console.log(`[PROXY] Body:`, req.body);
+  
+  // If POST with form body, add body params to query string
+  if (req.method === 'POST' && req.body && typeof req.body === 'object') {
+    const bodyParams = Object.entries(req.body)
+      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+      .join('&');
+    
+    if (bodyParams) {
+      queryString = queryString ? queryString + '&' + bodyParams : '?' + bodyParams;
+      console.log(`[PROXY] Added body params to query: ${bodyParams.substring(0, 100)}...`);
+    }
+  }
+  
+  const targetUrl = `https://icoderd.integracao.academiacode.dev.br${targetPath}${queryString}`;
+  console.log(`[PROXY] Target URL:`, targetUrl.substring(0, 150));
   
   return new Promise((resolve) => {
     try {
       const url = new URL(targetUrl);
       
-      // Prepare body from form data or JSON
+      // Prepare body from form data
       let body = '';
       let contentLength = 0;
       
       if (req.method !== 'GET' && req.method !== 'HEAD') {
-        // Convert form body to string
         if (typeof req.body === 'object') {
-          // If it's an object (parsed by Vercel), convert to URL encoded
           body = Object.entries(req.body)
             .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
             .join('&');
@@ -42,7 +56,6 @@ export default async function handler(req, res) {
         rejectUnauthorized: false
       };
       
-      // Set correct content-length if there's a body
       if (contentLength > 0) {
         options.headers['content-length'] = contentLength;
       }
@@ -68,9 +81,7 @@ export default async function handler(req, res) {
         resolve();
       });
       
-      // Write body if present
       if (body) {
-        console.log(`[PROXY] Sending body: ${body.substring(0, 100)}...`);
         proxyReq.write(body);
       }
       
