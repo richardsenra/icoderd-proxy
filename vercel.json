@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/:path*",
-      "destination": "https://host.magusdev.com.br/:path*"
+      "destination": "https://icoderd.integracao.academiacode.dev.br/:path*"
     }
   ]
 }
