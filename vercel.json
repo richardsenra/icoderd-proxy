@@ -2,17 +2,7 @@
   "rewrites": [
     {
       "source": "/:path*",
-      "destination": "/api/proxy?path=:path*"
-    },
-    {
-      "source": "/",
-      "destination": "/public"
+      "destination": "https://191.235.34.104:3000/:path*"
     }
-  ],
-  "functions": {
-    "api/proxy.js": {
-      "memory": 128,
-      "maxDuration": 60
-    }
-  }
+  ]
 }
