@@ -1,8 +1,8 @@
 {
-  "rewrites": [
-    {
-      "source": "/:path*",
-      "destination": "https://icoderd.integracao.academiacode.dev.br/:path*"
+  "functions": {
+    "api/[...path].js": {
+      "memory": 128,
+      "maxDuration": 30
     }
-  ]
+  }
 }
