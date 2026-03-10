@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/index.js": {
+    "api/[[...path]]/index.js": {
       "memory": 512,
       "maxDuration": 30
     }
