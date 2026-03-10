@@ -12,6 +12,24 @@ export default async function handler(req, res) {
     try {
       const url = new URL(targetUrl);
       
+      // Prepare body from form data or JSON
+      let body = '';
+      let contentLength = 0;
+      
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        // Convert form body to string
+        if (typeof req.body === 'object') {
+          // If it's an object (parsed by Vercel), convert to URL encoded
+          body = Object.entries(req.body)
+            .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+            .join('&');
+          contentLength = Buffer.byteLength(body);
+        } else if (typeof req.body === 'string') {
+          body = req.body;
+          contentLength = Buffer.byteLength(body);
+        }
+      }
+      
       const options = {
         hostname: url.hostname,
         port: url.port || 443,
@@ -21,10 +39,14 @@ export default async function handler(req, res) {
           ...req.headers,
           host: url.hostname
         },
-        rejectUnauthorized: false // Accept self-signed certificates
+        rejectUnauthorized: false
       };
       
-      // Only delete connection header, keep content-length for proper parsing
+      // Set correct content-length if there's a body
+      if (contentLength > 0) {
+        options.headers['content-length'] = contentLength;
+      }
+      
       delete options.headers['connection'];
       
       const proxyReq = https.request(options, (proxyRes) => {
@@ -46,8 +68,13 @@ export default async function handler(req, res) {
         resolve();
       });
       
-      // Pipe request body (important for POST data)
-      req.pipe(proxyReq);
+      // Write body if present
+      if (body) {
+        console.log(`[PROXY] Sending body: ${body.substring(0, 100)}...`);
+        proxyReq.write(body);
+      }
+      
+      proxyReq.end();
       
     } catch (error) {
       console.error('[ERROR]', error.message);
