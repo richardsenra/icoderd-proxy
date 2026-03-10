@@ -29,3 +29,5 @@ vercel
 ## Domínio
 
 icoderd.integracao.academiacode.dev.br
+
+Richard Senra
