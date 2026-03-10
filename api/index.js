@@ -6,8 +6,6 @@ export default async function handler(req, res) {
   const queryString = req.url.includes('?') ? '?' + req.url.split('?')[1] : '';
   const targetUrl = `https://icoderd.integracao.academiacode.dev.br${targetPath}${queryString}`;
   
-  console.log(`[PROXY] ${req.method} ${targetPath}`);
-  
   try {
     const headers = new Headers();
     Object.entries(req.headers).forEach(([key, value]) => {
@@ -36,6 +34,11 @@ export default async function handler(req, res) {
     const responseBody = await response.text();
     res.status(response.status);
     
+    // Add CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
     response.headers.forEach((value, name) => {
       const lowerName = name.toLowerCase();
       if (!['transfer-encoding', 'connection', 'content-encoding'].includes(lowerName)) {
@@ -47,6 +50,8 @@ export default async function handler(req, res) {
     
   } catch (error) {
     console.error('[ERROR]', error.message);
-    res.status(502).json({ error: error.message });
+    res.status(502);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.json({ error: error.message });
   }
 }
