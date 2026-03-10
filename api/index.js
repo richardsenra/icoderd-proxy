@@ -1,9 +1,12 @@
+// Disable SSL verification for self-signed certificates
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 export default async function handler(req, res) {
   const targetPath = req.url.split('?')[0];
   const queryString = req.url.includes('?') ? '?' + req.url.split('?')[1] : '';
   const targetUrl = `https://icoderd.integracao.academiacode.dev.br${targetPath}${queryString}`;
   
-  console.log(`[PROXY] ${req.method} ${targetPath} -> ${targetUrl}`);
+  console.log(`[PROXY] ${req.method} ${targetPath}`);
   
   try {
     const headers = new Headers();
@@ -23,18 +26,12 @@ export default async function handler(req, res) {
       }
     }
     
-    console.log(`[FETCH] Connecting to ${targetUrl}`);
-    
     const response = await fetch(targetUrl, {
       method: req.method,
       headers: headers,
       body: body,
-      redirect: 'follow',
-      // Ignore SSL errors for self-signed certificates
-      agent: process.env.NODE_ENV === 'production' ? undefined : null
+      redirect: 'follow'
     });
-    
-    console.log(`[RESPONSE] ${response.status}`);
     
     const responseBody = await response.text();
     res.status(response.status);
@@ -49,11 +46,7 @@ export default async function handler(req, res) {
     res.send(responseBody);
     
   } catch (error) {
-    console.error('[ERROR]', error.message, error.stack);
-    res.status(502).json({ 
-      error: error.message,
-      url: targetUrl,
-      details: error.toString()
-    });
+    console.error('[ERROR]', error.message);
+    res.status(502).json({ error: error.message });
   }
 }
