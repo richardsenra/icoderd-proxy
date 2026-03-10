@@ -24,8 +24,8 @@ export default async function handler(req, res) {
         rejectUnauthorized: false // Accept self-signed certificates
       };
       
+      // Only delete connection header, keep content-length for proper parsing
       delete options.headers['connection'];
-      delete options.headers['content-length'];
       
       const proxyReq = https.request(options, (proxyRes) => {
         res.writeHead(proxyRes.statusCode, {
@@ -46,15 +46,8 @@ export default async function handler(req, res) {
         resolve();
       });
       
-      if (req.method !== 'GET' && req.method !== 'HEAD') {
-        if (typeof req.body === 'string') {
-          proxyReq.write(req.body);
-        } else if (req.body) {
-          proxyReq.write(JSON.stringify(req.body));
-        }
-      }
-      
-      proxyReq.end();
+      // Pipe request body (important for POST data)
+      req.pipe(proxyReq);
       
     } catch (error) {
       console.error('[ERROR]', error.message);
