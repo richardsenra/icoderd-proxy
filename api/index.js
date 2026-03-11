@@ -9,31 +9,41 @@ export default async function handler(req, res) {
   console.log(`[PROXY] Original query:`, req.url.split('?')[1]);
   console.log(`[PROXY] Body:`, req.body);
   
-  // If POST with form body, add body params to query string
-  if (req.method === 'POST' && req.body && typeof req.body === 'object') {
+  // If POST with form body (not JSON), add body params to query string
+  const contentType = req.headers['content-type'] || '';
+  const isJsonRequest = contentType.includes('application/json');
+
+  if (req.method === 'POST' && req.body && typeof req.body === 'object' && !isJsonRequest) {
     const bodyParams = Object.entries(req.body)
       .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
       .join('&');
-    
+
     if (bodyParams) {
       queryString = queryString ? queryString + '&' + bodyParams : '?' + bodyParams;
       console.log(`[PROXY] Added body params to query: ${bodyParams.substring(0, 100)}...`);
     }
   }
-  
+
   const targetUrl = `https://icoderd.integracao.academiacode.dev.br${targetPath}${queryString}`;
   console.log(`[PROXY] Target URL:`, targetUrl.substring(0, 150));
-  
+  console.log(`[PROXY] Content-Type:`, contentType);
+  console.log(`[PROXY] Is JSON:`, isJsonRequest);
+
   return new Promise((resolve) => {
     try {
       const url = new URL(targetUrl);
-      
-      // Prepare body from form data
+
+      // Prepare body - keep JSON as-is, form data as URL-encoded
       let body = '';
       let contentLength = 0;
-      
+
       if (req.method !== 'GET' && req.method !== 'HEAD') {
-        if (typeof req.body === 'object') {
+        if (isJsonRequest && typeof req.body === 'object') {
+          // Keep JSON as JSON
+          body = JSON.stringify(req.body);
+          contentLength = Buffer.byteLength(body);
+        } else if (typeof req.body === 'object') {
+          // Form data: convert to URL-encoded
           body = Object.entries(req.body)
             .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
             .join('&');
