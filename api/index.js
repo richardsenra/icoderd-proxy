@@ -65,11 +65,16 @@ export default async function handler(req, res) {
         },
         rejectUnauthorized: false
       };
-      
+
       if (contentLength > 0) {
         options.headers['content-length'] = contentLength;
       }
-      
+
+      // If JSON, ensure Content-Type is set correctly
+      if (isJsonRequest) {
+        options.headers['content-type'] = 'application/json';
+      }
+
       delete options.headers['connection'];
       
       const proxyReq = https.request(options, (proxyRes) => {
